@@ -31,11 +31,10 @@ For following commands make sure, that the virtual environment is activated. Alt
 ## Run Project
 
 ```sh
-cd fed_ai_setup
-export PROJECT_DIR=quickstart-compose
-docker compose up --build -d
-flwr run quickstart-compose local-deployment --stream
+export FLWR_VERSION="1.19.0" # update with your version
+docker-compose up --build -d
+flwr run . local-deployment --stream
 ```
 
 At the end, to clean up:
-```docker compose down -v```
+```docker-compose down```
