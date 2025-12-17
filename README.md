@@ -36,5 +36,8 @@ docker-compose up --build -d
 flwr run . local-deployment --stream
 ```
 
+To read the logs, use 
+```docker-compose logs -f```
+
 At the end, to clean up:
 ```docker-compose down```
