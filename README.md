@@ -41,3 +41,16 @@ To read the logs, use
 
 At the end, to clean up:
 ```docker-compose down```
+
+## Training Progress Visualization
+
+To visualize training progress with Streamlit:
+
+1. Install dependencies: `uv sync`
+2. Run the Streamlit app: `streamlit run streamlit_app.py`
+3. Adjust sliders for number of clients, rounds, and fraction of clients per round.
+4. The app is split into two columns:
+   - **Left Column (Client Data)**: Select a client to view their 10 sample images with labels. Clients have randomized names (e.g., "University Hospital 1") and colors.
+   - **Right Column (Federated Simulation)**: Click "Start Federated Simulation" to run and see client selection, training progress, and aggregated charts.
+
+This simulates federated learning with multiple clients, showing client selection, training progress, and data visualization using real skin cancer images.
