@@ -2,7 +2,7 @@
 
 from flwr.client import ClientApp, NumPyClient
 from flwr.common import Context
-from fed_ai.task import load_data, load_model
+from fed_ai.task import load_data, load_model, training_callbacks
 import tensorflow as tf
 import logging
 
@@ -32,12 +32,18 @@ class FlowerClient(NumPyClient):
         logger.info(self.x_train.shape)
         logger.info(self.x_test.shape)
         self.model.set_weights(parameters)
+        # Use a training callback to log progress (epoch and batch information)
+        # If verbose is provided in the run config, allow Keras to use it; otherwise
+        # set verbose=0 so logs come only from the callback.
+        verbose_arg = self.verbose if self.verbose is not None else 0
+        callbacks = training_callbacks(log_every_n_batches=10)
         self.model.fit(
             self.x_train,
             self.y_train,
             epochs=self.epochs,
             batch_size=self.batch_size,
-            verbose=self.verbose,
+            verbose=verbose_arg,
+            callbacks=callbacks,
         )
         return self.model.get_weights(), len(self.x_train), {}
 
@@ -48,10 +54,28 @@ class FlowerClient(NumPyClient):
         return loss, len(self.x_test), {"accuracy": accuracy}
 
     def _preprocess_images(self, data):
-        return (
-            tf.image.resize(tf.convert_to_tensor(images), (120, 120)).numpy()
-            for images in data
-        )
+        # `data` is expected to be a partition dict returned by `load_data`.
+        # The previous implementation returned a generator which caused Keras
+        # to receive a non-array object. Convert images to a single NumPy
+        # array for train and test and return the four arrays.
+        #
+        # `data` from load_data() is (x_train, y_train, x_test, y_test)
+        try:
+            x_train, y_train, x_test, y_test = data
+        except Exception:
+            # If data is already a dataset-like object, let the error surface
+            raise ValueError("`data` must be a 4-tuple: (x_train, y_train, x_test, y_test)")
+
+        def _resize(images):
+            # Accept numpy arrays or lists; convert to tensor then resize
+            t = tf.convert_to_tensor(images)
+            resized = tf.image.resize(t, (120, 120)).numpy()
+            return resized
+
+        x_train = _resize(x_train)
+        x_test = _resize(x_test)
+
+        return x_train, y_train, x_test, y_test
 
 
 def client_fn(context: Context):
